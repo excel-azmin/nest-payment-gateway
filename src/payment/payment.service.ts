@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { stripeConfig } from 'src/config/stripe.config';
@@ -19,19 +19,33 @@ export class PaymentService {
     });
   }
 
-  async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
-    const createPayment = await new this.paymentModel(createPaymentDto).save();
+  async create(createPaymentDto: CreatePaymentDto): Promise<any> {
+    try {
+      const paymentStatus = await this.stripe.paymentIntents.create({
+        amount: Math.round(
+          createPaymentDto.itemQty * createPaymentDto.itemPrice * 100,
+        ),
+        currency: createPaymentDto.currency,
+        description: createPaymentDto.description,
+        payment_method_types: [createPaymentDto.source],
+        confirm: false,
+      });
 
-    console.log(createPayment.totalPrice);
-    const paymentStatus = await this.stripe.paymentIntents.create({
-      amount: Math.round(createPayment.totalPrice * 100),
-      currency: createPayment.currency,
-      description: createPayment.description,
-      payment_method_types: [createPayment.source],
-      confirm: false,
-    });
-
-    console.log(paymentStatus);
-    return paymentStatus;
+      const createPayment = await new this.paymentModel(createPaymentDto);
+      createPayment.transactionID = paymentStatus.id;
+      const payload = await createPayment.save();
+      console.log(payload);
+      return {
+        status: 'Success',
+        statusCode: HttpStatus.CREATED,
+        payload,
+      };
+    } catch (error) {
+      return {
+        status: 'Failed',
+        statusCode: error.statusCode,
+        error: error.message,
+      };
+    }
   }
 }

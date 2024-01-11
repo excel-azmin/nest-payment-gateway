@@ -28,7 +28,7 @@ export class CreatePaymentDto {
     required: true,
     description: 'Currenty of the payment',
     type: 'string',
-    example: 'USD',
+    example: 'usd',
   })
   currency: string;
 
