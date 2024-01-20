@@ -14,21 +14,29 @@ export class PaymentService {
     @InjectModel(Payment.name)
     private readonly paymentModel: Model<Payment>,
   ) {
-    this.stripe = new Stripe(stripeConfig.secretKey, {
-      apiVersion: '2023-10-16',
-    });
+    this.stripe = new Stripe(stripeConfig.secretKey);
   }
 
   async create(createPaymentDto: CreatePaymentDto): Promise<any> {
     try {
-      const paymentStatus = await this.stripe.paymentIntents.create({
-        amount: Math.round(
-          createPaymentDto.itemQty * createPaymentDto.itemPrice * 100,
-        ),
-        currency: createPaymentDto.currency,
-        description: createPaymentDto.description,
-        payment_method_types: [createPaymentDto.source],
-        confirm: false,
+      const paymentStatus = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: createPaymentDto.itemName,
+                images: ['https://i.imgur.com/EHyR2nP.png'],
+              },
+              unit_amount: createPaymentDto.itemPrice * 100,
+            },
+            quantity: createPaymentDto.itemQty,
+          },
+        ],
+        mode: 'payment',
+        success_url: `http://localhost:300/success`,
+        cancel_url: `http://localhost:300/cancel`,
       });
 
       const createPayment = await new this.paymentModel(createPaymentDto);

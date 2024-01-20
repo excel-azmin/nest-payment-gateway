@@ -8,7 +8,7 @@ import { PaymentModule } from './payment/payment.module';
   imports: [
     PaymentModule,
     MongooseModule.forRoot(
-      'mongodb://root:example@localhost:27017/nestJsPayment',
+      'mongodb://root:mongorootPass2023@202.91.42.198:27018/nestJsPayment',
       {
         authSource: 'admin',
       },
